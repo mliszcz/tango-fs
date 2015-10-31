@@ -8,34 +8,13 @@
 #include <memory>
 #include <iterator>
 #include <algorithm>
+#include <functional>
 #include <fuse.h>
 #include <tango.h>
 
 class TangoBasePath {
 protected:
     std::string path;
-
-    std::vector<std::string> queryDatabase() {
-        std::string queryPath = path.substr(1) + "*";
-        auto database = std::make_shared<Tango::Database>();
-        std::vector<std::string> result;
-        Tango::DbDatum dd = database->get_device_exported(queryPath);
-        dd >> result;
-        return result;
-    }
-
-    std::set<std::string> findChildren() {
-        const auto& db = queryDatabase();
-        std::set<std::string> res;
-        const auto& normalizedPath = (path == "/") ? "" : path;
-        std::transform(db.begin(), db.end(), std::inserter(res, res.begin()),
-        [&](const auto& x){
-            const auto& s = (x).substr(normalizedPath.size());
-            auto it = std::find(s.begin(), s.end(), '/');
-            return std::string(s.begin(), it);
-        });
-        return res;
-    }
 
 public:
     using Ptr = std::shared_ptr<TangoBasePath>;
@@ -44,12 +23,15 @@ public:
         path(path) { }
 
     virtual FsEntry::Ptr getattr() = 0;
+
     virtual std::set<std::string> readdir() {
         return {};
     }
+
     virtual int open(const struct fuse_file_info& fi) {
         return -ENOENT;
     }
+
     virtual std::string read() {
         return {};
     }
@@ -71,15 +53,6 @@ struct TangoBaseDirPath : public TangoBasePath {
     }
 };
 
-// template <typename TFsEntry>
-// struct TangoBaseFsPath : public TangoBasePath {
-//     using TangoBasePath::TangoBasePath;
-//
-//     FsEntry::Ptr getattr() override {
-//         return std::make_shared<TFsEntry>();
-//     }
-// };
-
 struct TangoBaseFilePath : public TangoBasePath {
     using TangoBasePath::TangoBasePath;
 
@@ -88,6 +61,8 @@ struct TangoBaseFilePath : public TangoBasePath {
     }
 
     int open(const struct fuse_file_info& fi) override {
+        // if ((fi.flags & 3) != O_RDONLY)
+        //         return -EACCES;
         return 0;
     }
 };
@@ -97,6 +72,29 @@ struct TangoDbQueryPath : public TangoBaseDirPath {
 
     std::set<std::string> readdir() override {
         return findChildren();
+    }
+
+private:
+    std::vector<std::string> queryDatabase() {
+        std::string queryPath = path.substr(1) + "*";
+        auto database = std::make_shared<Tango::Database>();
+        std::vector<std::string> result;
+        Tango::DbDatum dd = database->get_device_exported(queryPath);
+        dd >> result;
+        return result;
+    }
+
+    std::set<std::string> findChildren() {
+        const auto& db = queryDatabase();
+        std::set<std::string> res;
+        const auto& normalizedPath = (path == "/") ? "" : path;
+        std::transform(db.begin(), db.end(), std::inserter(res, res.begin()),
+        [&](const auto& x){
+            const auto& s = (x).substr(normalizedPath.size());
+            auto it = std::find(s.begin(), s.end(), '/');
+            return std::string(s.begin(), it);
+        });
+        return res;
     }
 };
 
@@ -117,40 +115,80 @@ struct TangoMemberPath : public TangoBaseDirPath {
 
     std::set<std::string> readdir() override {
         return {
-            "name",
+            "attributes",
             "class",
-            "server",
-            "status",
-            "attributes"
+            "description",
+            "name",
+            "status"
         };
     }
 };
 
-struct TangoDeviceClassPath : public TangoBaseFilePath {
+struct TangoDeviceFilePathWithProxy : public TangoBaseFilePath {
     using TangoBaseFilePath::TangoBaseFilePath;
-
-    std::string read() override {
+protected:
+    std::unique_ptr<Tango::DeviceProxy> getDeviceProxy() {
         try {
-            auto p = path.substr(1);
-            Tango::DeviceProxy dp(p);
-            auto info = dp.info();
-            return info.dev_class;
-        } catch (...) {
+            auto tangoPath = path.substr(1);
+            return std::make_unique<Tango::DeviceProxy>(tangoPath);
+        } catch(...) {
+            return nullptr;
+        }
+    }
+
+    // FIXME const& not accepted here (mem_fn issue)
+    std::string extractFromDeviceProxy(
+        std::function<std::string(Tango::DeviceProxy)> f) {
+        auto p = getDeviceProxy();
+        if (p) {
+            return f(*p);
+        } else {
             return "";
         }
+    }
+
+    std::string extractFromDeviceInfo(
+        std::function<std::string(Tango::DeviceInfo)> f) {
+        return extractFromDeviceProxy([&](auto p){ return f(p.info()); });
+    }
+
+    std::string extractFromDeviceInfo(std::string Tango::DeviceInfo::* p) {
+        return extractFromDeviceInfo([&](auto i){ return i.*p; });
     }
 };
 
-struct TangoDeviceStatusPath : public TangoBaseFilePath {
-    using TangoBaseFilePath::TangoBaseFilePath;
+/**
+ * Extracts data using DeviceInfo member.
+ */
+struct TangoDeviceInfoPath : public TangoDeviceFilePathWithProxy {
+
+    TangoDeviceInfoPath(const std::string& path,
+                        std::string Tango::DeviceInfo::* p) :
+        TangoDeviceFilePathWithProxy(path),
+        infoMember(p) { }
 
     std::string read() override {
-        try {
-            auto p = path.substr(1);
-            Tango::DeviceProxy dp(p);
-            return dp.status();
-        } catch (...) {
-            return "";
-        }
+        return extractFromDeviceInfo(infoMember);
     }
+
+private:
+    std::string Tango::DeviceInfo::* infoMember;
+};
+
+/**
+ * Extracts data using DeviceProxy -> std::string function.
+ */
+struct TangoDeviceProxyPath : public TangoDeviceFilePathWithProxy {
+
+    TangoDeviceProxyPath(const std::string& path,
+                        std::string (Tango::DeviceProxy::*p)()) :
+        TangoDeviceFilePathWithProxy(path),
+        proxyFn(p) { }
+
+    std::string read() override {
+        return extractFromDeviceProxy(std::mem_fn(proxyFn));
+    }
+
+private:
+    std::string (Tango::DeviceProxy::*proxyFn)();
 };

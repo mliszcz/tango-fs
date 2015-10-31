@@ -110,6 +110,18 @@ private:
     const char SEPARATOR = '/';
     const std::string ROOT_PATH = std::string(1, SEPARATOR);
 
+    enum class DevicePath {
+        CLASS, NAME, DESCRIPTION, STATUS, UNDEFINED
+    };
+
+    DevicePath encodeDevicePath(const std::string& str) {
+        if (str == "class") return DevicePath::CLASS;
+        if (str == "status") return DevicePath::STATUS;
+        if (str == "name") return DevicePath::NAME;
+        if (str == "description") return DevicePath::DESCRIPTION;
+        return DevicePath::UNDEFINED;
+    }
+
     TangoBasePath::Ptr mapPath(const std::string& path) {
 
         if (path == ROOT_PATH) {
@@ -125,12 +137,21 @@ private:
                 auto pos = path.find_last_of(SEPARATOR);
                 auto device = path.substr(0, pos);
                 auto what = path.substr(pos+1);
-                if (what == "class") {
-                    return std::make_shared<TangoDeviceClassPath>(device);
-                } else if (what == "status") {
-                    return std::make_shared<TangoDeviceStatusPath>(device);
-                } else {
-                    return std::make_shared<TangoInvalidPath>(path);
+                switch(encodeDevicePath(what)) {
+                    case DevicePath::CLASS:
+                        return std::make_shared<TangoDeviceInfoPath>(device,
+                                            &Tango::DeviceInfo::dev_class);
+                    case DevicePath::NAME:
+                        return std::make_shared<TangoDeviceProxyPath>(device,
+                                            &Tango::DeviceProxy::name);
+                    case DevicePath::STATUS:
+                        return std::make_shared<TangoDeviceProxyPath>(device,
+                                            &Tango::DeviceProxy::status);
+                    case DevicePath::DESCRIPTION:
+                        return std::make_shared<TangoDeviceProxyPath>(device,
+                                            &Tango::DeviceProxy::description);
+                    default:
+                        return std::make_shared<TangoInvalidPath>(path);
                 }
             }
             default: return std::make_shared<TangoInvalidPath>(path);
