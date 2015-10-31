@@ -1,11 +1,20 @@
 #pragma once
 
 #include <FuseOperations.hpp>
+#include <TangoBasePath.hpp>
+
+#include <algorithm>
+#include <string>
+#include <memory>
 
 #include <cstring>
 #include <tango.h>
 #include <errno.h>
 #include <fuse.h>
+
+// http://fuse.sourceforge.net/doxygen/structfuse__operations.html
+// http://sourceforge.net/p/fuse/wiki/Main_Page/
+// http://sourceforge.net/p/fuse/wiki/FuseInvariants/
 
 class TangoFuseOperations : public FuseOperations {
 
@@ -22,29 +31,15 @@ public:
     int getattr(const char* path,
                 struct stat* stbuf) override {
 
-        // auto database = std::make_shared<Tango::Database>();
-        // std::vector<std::string> domains;
-        //
-        // std::string dd_pattern("dserver/TangoTest/test*");
-        // DbDatum dd = database->get_device_exported(dd_pattern);
-        // dd >> domains;
-        //
-        // for (auto& d : domains) {
-        //     std::cout << "domain " << d << "\n";
-        // }
+        auto p = mapPath(path);
+        auto entry = p->getattr();
 
-        int res = 0;
-        memset(stbuf, 0, sizeof(struct stat));
-        if (strcmp(path, "/") == 0) {
-                stbuf->st_mode = S_IFDIR | 0755;
-                stbuf->st_nlink = 2;
-        } else if (strcmp(path, hello_path) == 0) {
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                stbuf->st_size = strlen(hello_str);
-        } else
-                res = -ENOENT;
-        return res;
+        if (entry->isValid()) {
+            *stbuf = static_cast<struct stat>(*entry);
+            return 0;
+        } else {
+            return -ENOENT;
+        }
     }
 
     int readdir(const char* path,
@@ -52,23 +47,35 @@ public:
                 fuse_fill_dir_t filler,
                 off_t offset,
                 struct fuse_file_info* fi) override {
-        (void) offset;
-        (void) fi;
-        if (strcmp(path, "/") != 0)
-                return -ENOENT;
-        filler(buf, ".", NULL, 0);
-        filler(buf, "..", NULL, 0);
-        filler(buf, hello_path + 1, NULL, 0);
+
+        auto p = mapPath(path);
+
+        filler(buf, ".", nullptr, 0);
+        filler(buf, "..", nullptr, 0);
+
+        for (const auto& s : p->readdir()) {
+            filler(buf, s.c_str(), nullptr, 0);
+        }
+
         return 0;
     }
 
     int open(const char* path,
              struct fuse_file_info* fi) override {
-        if (strcmp(path, hello_path) != 0)
-                return -ENOENT;
-        if ((fi->flags & 3) != O_RDONLY)
-                return -EACCES;
-        return 0;
+
+        auto p = mapPath(path);
+
+        if (not p->getattr()->isValid()) {
+            return -ENOENT;
+        }
+
+        return p->open(*fi);
+
+        // if (strcmp(path, hello_path) != 0)
+        //         return -ENOENT;
+        // if ((fi->flags & 3) != O_RDONLY)
+        //         return -EACCES;
+        // return 0;
     }
 
     int read(const char* path,
@@ -76,17 +83,58 @@ public:
              size_t size,
              off_t offset,
              struct fuse_file_info* fi) override {
-        size_t len;
-        (void) fi;
-        if(strcmp(path, hello_path) != 0)
-                return -ENOENT;
-        len = strlen(hello_str);
-        if (offset < len) {
-                if (offset + size > len)
-                        size = len - offset;
-                memcpy(buf, hello_str + offset, size);
-        } else
-                size = 0;
-        return size;
+
+        auto p = mapPath(path);
+
+        if (not p->getattr()->isValid()) {
+         return -ENOENT;
+        }
+
+        auto data = p->read();
+        data.push_back('\n');
+
+        int bytesRead = 0;
+        auto dataSize = data.size();
+
+        if (offset < dataSize) {
+            size = (offset + size > dataSize) ? (dataSize - offset) : size;
+            std:copy(data.begin() + offset, data.begin() + offset + size, buf);
+            bytesRead = size;
+        }
+
+        return bytesRead;
     }
+
+private:
+
+    const char SEPARATOR = '/';
+    const std::string ROOT_PATH = std::string(1, SEPARATOR);
+
+    TangoBasePath::Ptr mapPath(const std::string& path) {
+
+        if (path == ROOT_PATH) {
+            return std::make_shared<TangoRootPath>(ROOT_PATH);
+        }
+
+        auto count = std::count(path.begin(), path.end(), SEPARATOR);
+        switch (count) {
+            case 1: return std::make_shared<TangoDomainPath>(path);
+            case 2: return std::make_shared<TangoFamilyPath>(path);
+            case 3: return std::make_shared<TangoMemberPath>(path);
+            case 4: {
+                auto pos = path.find_last_of(SEPARATOR);
+                auto device = path.substr(0, pos);
+                auto what = path.substr(pos+1);
+                if (what == "class") {
+                    return std::make_shared<TangoDeviceClassPath>(device);
+                } else if (what == "status") {
+                    return std::make_shared<TangoDeviceStatusPath>(device);
+                } else {
+                    return std::make_shared<TangoInvalidPath>(path);
+                }
+            }
+            default: return std::make_shared<TangoInvalidPath>(path);
+        }
+    }
+
 };
