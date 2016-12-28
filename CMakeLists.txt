@@ -9,9 +9,11 @@ project (${PROJECT_NAME})
 
 find_package(fuse 3.0 REQUIRED)
 find_package(tango 8.0 REQUIRED)
+find_package(Boost REQUIRED)
 
 if(FUSE_FOUND)
 if(TANGO_FOUND)
+if(Boost_FOUND)
 
     add_definitions(${FUSE_DEFINITIONS})
     # add_definitions(-DTANGO_CLIENT)
@@ -24,6 +26,7 @@ if(TANGO_FOUND)
 
     include_directories(${FUSE_INCLUDE_DIRS})
     include_directories(${TANGO_INCLUDE_DIRS})
+    include_directories(${Boost_INCLUDE_DIRS})
     include_directories(include)
 
     set(LIBS ${LIBS} ${FUSE_LIBRARIES})
@@ -35,5 +38,6 @@ if(TANGO_FOUND)
 
     target_link_libraries(${PROJECT_NAME} "${LIBS}")
 
+endif()
 endif()
 endif()

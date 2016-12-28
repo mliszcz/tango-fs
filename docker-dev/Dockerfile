@@ -1,0 +1,25 @@
+
+FROM fedora:25
+
+MAINTAINER mliszcz<liszcz.michal@gmail.com>
+
+RUN printf '[maxiv]\n\
+name=MAX IV Public Repository for RHEL/CentOS $releasever - $basearch\n\
+baseurl=http://pubrepo.maxiv.lu.se/rpm/fc23/$basearch/\n\
+enabled=1\n\
+gpgcheck=0\n\
+'> /etc/yum.repos.d/maxiv.repo
+
+RUN dnf -y install \
+    which \
+    tree \
+    make \
+    cmake \
+    gcc \
+    gcc-c++ \
+    boost-devel \
+    fuse \
+    fuse-devel \
+    libtango9-devel
+
+RUN dnf -y install hostname

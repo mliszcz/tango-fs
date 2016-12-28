@@ -2,6 +2,9 @@
 
 #include <FsEntry.hpp>
 
+#include <types.hpp>
+#include <tango.hpp>
+
 #include <string>
 #include <vector>
 #include <set>
@@ -11,6 +14,9 @@
 #include <functional>
 #include <fuse.h>
 #include <tango.h>
+
+#include <boost/optional.hpp>
+
 
 class TangoBasePath {
 protected:
@@ -67,34 +73,42 @@ struct TangoBaseFilePath : public TangoBasePath {
     }
 };
 
+auto removeStringPrefix(std::string::size_type prefix) {
+    return [=](const std::string& text) {
+        return text.substr(prefix);
+    };
+}
+
+auto removeStringAfter(std::string::value_type c) {
+    return [=](const std::string& text) {
+        return text.substr(0, text.find(c));
+    };
+}
+
+auto findDirectChildrenInDatabase(const std::string& path) {
+
+    auto childrenPath = path + "*";
+
+    auto result = (tango::createDatabase()
+        >= [&](auto& db){ return db.get_device_exported(childrenPath); }
+        >= tango::extractFromDbDatum<std::vector<std::string>>)
+        .get_value_or({});
+
+    auto prefix = path.empty() ? 0 : path.size() + 1; // + 1 for leading slash
+
+    auto entries = result
+        >= removeStringPrefix(prefix)
+        >= removeStringAfter('/');
+
+    return std::set<std::string>(entries.begin(), entries.end());
+}
+
+
 struct TangoDbQueryPath : public TangoBaseDirPath {
     using TangoBaseDirPath::TangoBaseDirPath;
 
     std::set<std::string> readdir() override {
-        return findChildren();
-    }
-
-private:
-    std::vector<std::string> queryDatabase() {
-        std::string queryPath = path.substr(1) + "*";
-        auto database = std::make_shared<Tango::Database>();
-        std::vector<std::string> result;
-        Tango::DbDatum dd = database->get_device_exported(queryPath);
-        dd >> result;
-        return result;
-    }
-
-    std::set<std::string> findChildren() {
-        const auto& db = queryDatabase();
-        std::set<std::string> res;
-        const auto& normalizedPath = (path == "/") ? "" : path;
-        std::transform(db.begin(), db.end(), std::inserter(res, res.begin()),
-        [&](const auto& x){
-            const auto& s = (x).substr(normalizedPath.size());
-            auto it = std::find(s.begin(), s.end(), '/');
-            return std::string(s.begin(), it);
-        });
-        return res;
+        return findDirectChildrenInDatabase(path.substr(1));
     }
 };
 
@@ -124,71 +138,35 @@ struct TangoMemberPath : public TangoBaseDirPath {
     }
 };
 
-struct TangoDeviceFilePathWithProxy : public TangoBaseFilePath {
-    using TangoBaseFilePath::TangoBaseFilePath;
-protected:
-    std::unique_ptr<Tango::DeviceProxy> getDeviceProxy() {
-        try {
-            auto tangoPath = path.substr(1);
-            return std::make_unique<Tango::DeviceProxy>(tangoPath);
-        } catch(...) {
-            return nullptr;
-        }
-    }
-
-    // FIXME const& not accepted here (mem_fn issue)
-    std::string extractFromDeviceProxy(
-        std::function<std::string(Tango::DeviceProxy)> f) {
-        auto p = getDeviceProxy();
-        if (p) {
-            return f(*p);
-        } else {
-            return "";
-        }
-    }
-
-    std::string extractFromDeviceInfo(
-        std::function<std::string(Tango::DeviceInfo)> f) {
-        return extractFromDeviceProxy([&](auto p){ return f(p.info()); });
-    }
-
-    std::string extractFromDeviceInfo(std::string Tango::DeviceInfo::* p) {
-        return extractFromDeviceInfo([&](auto i){ return i.*p; });
-    }
-};
-
-/**
- * Extracts data using DeviceInfo member.
- */
-struct TangoDeviceInfoPath : public TangoDeviceFilePathWithProxy {
+struct TangoDeviceInfoPath : public TangoBaseFilePath {
 
     TangoDeviceInfoPath(const std::string& path,
                         std::string Tango::DeviceInfo::* p) :
-        TangoDeviceFilePathWithProxy(path),
+        TangoBaseFilePath(path),
         infoMember(p) { }
 
     std::string read() override {
-        return extractFromDeviceInfo(infoMember);
+        return (tango::createDeviceProxy(path.substr(1))
+            >= [](auto& proxy){ return proxy.info(); }
+            >= [&](auto& info){ return info.*infoMember; }).get_value_or("");
     }
 
 private:
     std::string Tango::DeviceInfo::* infoMember;
 };
 
-/**
- * Extracts data using DeviceProxy -> std::string function.
- */
-struct TangoDeviceProxyPath : public TangoDeviceFilePathWithProxy {
+struct TangoDeviceProxyPath : public TangoBaseFilePath {
 
     TangoDeviceProxyPath(const std::string& path,
-                        std::string (Tango::DeviceProxy::*p)()) :
-        TangoDeviceFilePathWithProxy(path),
+                         std::function<std::string(Tango::DeviceProxy&)> p) :
+
+        TangoBaseFilePath(path),
         proxyFn(p) { }
 
     std::string read() override {
-        return extractFromDeviceProxy(std::mem_fn(proxyFn));
+        return (tango::createDeviceProxy(path.substr(1)) >= proxyFn).get_value_or("");
     }
 
 private:
-    std::string (Tango::DeviceProxy::*proxyFn)();
+    std::function<std::string(Tango::DeviceProxy&)> proxyFn;
 };

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+USER_UID=`id -u`
+USER_GID=`id -g`
+
+WORKDIR=`pwd`
+HOST=`hostname --short`
+
+CONTAINER_HOME=$HOME
+
+docker run \
+  -it \
+  --net host \
+  --privileged \
+  --user "$USER_UID:$USER_GID" \
+  --workdir "$WORKDIR" \
+  -e HOME=$CONTAINER_HOME \
+  -v $HOME:$CONTAINER_HOME \
+  -v /etc/passwd:/etc/passwd:ro \
+  -v /etc/group:/etc/group:ro \
+  mliszcz/tango-fs-dev \
+  /bin/bash

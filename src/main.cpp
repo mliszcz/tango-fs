@@ -65,8 +65,8 @@ static int myfs_opt_proc(void *data, const char *arg, int key, struct fuse_args 
 
 int main(int argc, char *argv[])
 {
-    const std::string tango_host = std::string("TANGO_HOST=") + "172.17.0.1" + ":" + "10000";
-    putenv(const_cast<char*>(tango_host.c_str()));
+    // const std::string tango_host = std::string("TANGO_HOST=") + "172.17.0.1" + ":" + "10000";
+    // putenv(const_cast<char*>(tango_host.c_str()));
 
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
     struct TangoFsConfig conf;
