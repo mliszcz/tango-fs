@@ -18,7 +18,7 @@ Maybe<Tango::Database> createDatabase() {
     try {
         return Tango::Database();
     }  catch (...) {
-        return None;
+        return boost::none;
     }
 }
 

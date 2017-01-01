@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <string>
 
+#include <filesystem.hpp>
+
 struct TangoFsConfig {
     char* tangoHost;
 };
@@ -78,5 +80,6 @@ int main(int argc, char *argv[])
 
     TangoFuseOperations ops {};
     struct fuse_operations fuseOps = static_cast<fuse_operations>(ops);
+    fuseOps.getattr = &filesystem::getattr;
     return fuse_main(args.argc, args.argv, &fuseOps, nullptr);
 }
