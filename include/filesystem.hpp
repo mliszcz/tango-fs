@@ -3,6 +3,9 @@
 
 #include <paths.hpp>
 #include <handlers/getattr.hpp>
+#include <handlers/readdir.hpp>
+#include <handlers/open.hpp>
+#include <handlers/read.hpp>
 #include <boost/variant.hpp>
 #include <boost/format.hpp>
 #include <regex>
@@ -54,6 +57,33 @@ paths::AnyPath parsePath(const char* path) {
 int getattr(const char* path, struct stat* stbuf) {
     auto p = parsePath(path);
     handlers::getattr handler{stbuf};
+    return boost::apply_visitor(handler, p);
+}
+
+int readdir(const char* path,
+            void* buf,
+            fuse_fill_dir_t filler,
+            off_t offset,
+            struct fuse_file_info* fi) {
+    auto p = parsePath(path);
+    handlers::readdir handler{buf, filler, offset, fi};
+    return boost::apply_visitor(handler, p);
+}
+
+int open(const char* path,
+         struct fuse_file_info* fi) {
+    auto p = parsePath(path);
+    handlers::open handler{fi};
+    return boost::apply_visitor(handler, p);
+}
+
+int read(const char* path,
+         char* buf,
+         size_t size,
+         off_t offset,
+         struct fuse_file_info* fi) {
+    auto p = parsePath(path);
+    handlers::read handler{buf, size, offset, fi};
     return boost::apply_visitor(handler, p);
 }
 
