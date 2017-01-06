@@ -12,6 +12,7 @@ gpgcheck=0\n\
 
 RUN dnf -y install \
     which \
+    hostname \
     tree \
     make \
     cmake \
@@ -21,5 +22,3 @@ RUN dnf -y install \
     fuse \
     fuse-devel \
     libtango9-devel
-
-RUN dnf -y install hostname
