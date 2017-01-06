@@ -2,8 +2,9 @@
 #pragma once
 
 #include <paths.hpp>
+#include <lookup.hpp>
+
 #include <fuse.h>
-#include <handlers/read.hpp>
 #include <boost/variant.hpp>
 
 namespace handlers {
@@ -15,10 +16,11 @@ private:
     using Stat = struct stat;
     Stat* stbuf;
 
-    void fillAsDirectory() const {
+    template <typename Path>
+    void fillAsDirectory(const Path& path) const {
         Stat stat {};
         stat.st_mode = S_IFDIR | 0755;
-        stat.st_nlink = 2;
+        stat.st_nlink = 2 + lookup::directoryEntries(path).size();
         *stbuf = stat;
     }
 
@@ -31,33 +33,31 @@ public:
         return -ENOENT;
     }
 
-    int operator()(const paths::DatabaseQueryPath&) const {
-        fillAsDirectory();
+    int operator()(const paths::DatabaseQueryPath& path) const {
+        fillAsDirectory(path);
         return 0;
     }
 
-    int operator()(const paths::DevicePath&) const {
-        fillAsDirectory();
+    int operator()(const paths::DevicePath& path) const {
+        fillAsDirectory(path);
         return 0;
     }
 
-    int operator()(const paths::DeviceAttributesPath&) const {
-        fillAsDirectory();
+    int operator()(const paths::DeviceAttributesPath& path) const {
+        fillAsDirectory(path);
         return 0;
     }
 
     template <typename Path>
     int operator()(const Path& path) const {
 
-        // TODO provide dedicated function for extracting size
-        char buf[1024];
-        struct fuse_file_info fi{};
-        read getFileSize{buf, sizeof(buf), 0, &fi};
+        auto size = lookup::fileContents(path)
+            >= std::mem_fn(&std::string::size);
 
         Stat stat {};
         stat.st_mode = S_IFREG | 0444;
         stat.st_nlink = 1;
-        stat.st_size = getFileSize(path) + 1;
+        stat.st_size = size.get_value_or(0);
         *stbuf = stat;
         return 0;
     }

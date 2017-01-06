@@ -5,46 +5,14 @@
 #include <tango.hpp>
 #include <types.hpp>
 
+#include <lookup.hpp>
+
 #include <fuse.h>
 #include <tango.h>
 
 #include <boost/variant.hpp>
 
-#include <set>
-#include <string>
-#include <vector>
-
 namespace handlers {
-
-auto removeStringPrefix(std::string::size_type prefix) {
-    return [=](const std::string& text) {
-        return text.substr(prefix);
-    };
-}
-
-auto removeStringAfter(std::string::value_type c) {
-    return [=](const std::string& text) {
-        return text.substr(0, text.find(c));
-    };
-}
-
-auto findDirectChildrenInDatabase(const std::string& path) {
-
-    auto childrenPath = path + "*";
-
-    auto result = (tango::createDatabase()
-        >= [&](auto& db){ return db.get_device_exported(childrenPath); }
-        >= tango::extractFromDbDatum<std::vector<std::string>>)
-        .get_value_or({});
-
-    auto prefix = path.empty() ? 0 : path.size() + 1; // + 1 for leading slash
-
-    auto entries = result
-        >= removeStringPrefix(prefix)
-        >= removeStringAfter('/');
-
-    return std::set<std::string>(entries.begin(), entries.end());
-}
 
 class readdir : boost::static_visitor<int> {
 
@@ -55,11 +23,12 @@ private:
     off_t offset;
     struct fuse_file_info* fi;
 
-    template<typename T>
-    void fill(T&& paths) const {
+    template<typename Path>
+    void fillDirectory(const Path& path) const {
+        auto entries = lookup::directoryEntries(path);
         filler(buf, ".", nullptr, 0);
         filler(buf, "..", nullptr, 0);
-        for (const auto& s : paths) {
+        for (const auto& s : entries) {
             filler(buf, s.c_str(), nullptr, 0);
         }
     }
@@ -76,16 +45,17 @@ public:
         , fi(fi) {}
 
     int operator()(const paths::DatabaseQueryPath& path) const {
-        fill(findDirectChildrenInDatabase(path.query));
+        fillDirectory(path);
         return 0;
     }
 
-    int operator()(const paths::DevicePath&) const {
-        fill(std::set<std::string>{"attributes",
-                                   "class",
-                                   "description",
-                                   "name",
-                                   "status"});
+    int operator()(const paths::DeviceAttributesPath& path) const {
+        fillDirectory(path);
+        return 0;
+    }
+
+    int operator()(const paths::DevicePath& path) const {
+        fillDirectory(path);
         return 0;
     }
 
