@@ -25,7 +25,15 @@ auto directoryEntries(const paths::DeviceAttributesPath& path) {
 }
 
 auto directoryEntries(const paths::DevicePath&) {
-    return tango::getDeviceSubdirectories();
+    return std::set<std::string>{"attributes",
+                                 "class",
+                                 "description",
+                                 "name",
+                                 "status"};
+}
+
+auto directoryEntries(const paths::AttributePath&) {
+    return std::set<std::string>{"value"};
 }
 
 template <typename Path>
@@ -55,6 +63,12 @@ auto fileContents(const paths::DeviceStatusPath& path) {
     auto proxy = tango::createDeviceProxy(path.device);
     auto f = std::mem_fn(&Tango::DeviceProxy::status);
     return tango::extractFromDeviceProxy(f)(proxy);
+}
+
+auto fileContents(const paths::AttributeValuePath& path) {
+    auto proxy = tango::createDeviceProxy(path.device);
+    auto f = tango::extractStringFromDeviceAttribute;
+    return tango::extractFromDeviceAttribute(f)(path.attribute)(proxy);
 }
 
 }

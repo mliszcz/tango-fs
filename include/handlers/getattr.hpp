@@ -48,6 +48,11 @@ public:
         return 0;
     }
 
+    int operator()(const paths::AttributePath& path) const {
+        fillAsDirectory(path);
+        return 0;
+    }
+
     template <typename Path>
     int operator()(const Path& path) const {
 

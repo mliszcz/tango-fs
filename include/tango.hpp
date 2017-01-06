@@ -8,6 +8,7 @@
 #include <boost/optional.hpp>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -50,9 +51,29 @@ constexpr auto extractFromDbDatum = [](auto&& dbDatum) {
     return t;
 };
 
+template <typename T>
+constexpr auto extractValueFromDeviceAttribute = extractFromDbDatum<T>;
+
+constexpr auto extractStringFromDeviceAttribute = [](auto&& deviceAttribute) {
+    std::ostringstream oss{};
+    oss << deviceAttribute << "\n";
+    return oss.str();
+};
+
 constexpr auto extractFromDeviceProxy = [](auto&& f) {
     return [=](auto&& proxy) {
         return proxy >= f >= __detail::appendTrailingNewline;
+    };
+};
+
+constexpr auto extractFromDeviceAttribute = [](auto&& f) {
+    return [=](auto&& attribute) {
+        return [=](auto&& proxy) {
+            return proxy
+                >= [=](auto&& p){ return p.read_attribute(attribute.c_str()); }
+                >= f
+                >= __detail::appendTrailingNewline;
+        };
     };
 };
 
@@ -76,14 +97,6 @@ constexpr auto findDirectChildrenInDatabase = [](auto&& path) {
         return std::set<std::string>(entries.begin(), entries.end());
     };
 };
-
-auto getDeviceSubdirectories() {
-    return std::set<std::string>{"attributes",
-                                 "class",
-                                 "description",
-                                 "name",
-                                 "status"};
-}
 
 constexpr auto getDeviceAttributeList = [](auto&& proxy) {
 

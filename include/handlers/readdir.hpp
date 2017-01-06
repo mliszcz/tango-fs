@@ -49,12 +49,17 @@ public:
         return 0;
     }
 
+    int operator()(const paths::DevicePath& path) const {
+        fillDirectory(path);
+        return 0;
+    }
+
     int operator()(const paths::DeviceAttributesPath& path) const {
         fillDirectory(path);
         return 0;
     }
 
-    int operator()(const paths::DevicePath& path) const {
+    int operator()(const paths::AttributePath& path) const {
         fillDirectory(path);
         return 0;
     }

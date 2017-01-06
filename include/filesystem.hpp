@@ -32,7 +32,9 @@ paths::AnyPath parsePath(const char* path) {
     auto RE_DEVICE_DESCRIPTION = re("/(%1%/%1%/%1%)/description");
     auto RE_DEVICE_NAME        = re("/(%1%/%1%/%1%)/name");
     auto RE_DEVICE_STATUS      = re("/(%1%/%1%/%1%)/status");
-    auto RE_DEVICE_ATTRIBUTES  = re("/(%1%/%1%/%1%)/attributes");
+    auto RE_DEVICE_ATTRIBUTES  = re("/(%1%/%1%/%1%)/attributes/?");
+    auto RE_ATTRIBUTE          = re("/(%1%/%1%/%1%)/attributes/(%1%)/?");
+    auto RE_ATTRIBUTE_VALUE    = re("/(%1%/%1%/%1%)/attributes/(%1%)/value");
 
     std::string p{path};
     std::smatch m{};
@@ -50,6 +52,8 @@ paths::AnyPath parsePath(const char* path) {
     if (match(RE_DEVICE_NAME))        return DeviceNamePath{m[1]};
     if (match(RE_DEVICE_STATUS))      return DeviceStatusPath{m[1]};
     if (match(RE_DEVICE_ATTRIBUTES))  return DeviceAttributesPath{m[1]};
+    if (match(RE_ATTRIBUTE))          return AttributePath{m[1], m[2]};
+    if (match(RE_ATTRIBUTE_VALUE))    return AttributeValuePath{m[1], m[2]};
 
     return InvalidPath{};
 }

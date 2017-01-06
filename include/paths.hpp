@@ -37,6 +37,12 @@ struct DeviceAttributesPath {
 };
 
 struct AttributePath {
+    std::string device;
+    std::string attribute;
+};
+
+struct AttributeValuePath {
+    std::string device;
     std::string attribute;
 };
 
@@ -49,5 +55,6 @@ using AnyPath = boost::variant<
     DeviceNamePath,
     DeviceStatusPath,
     DeviceAttributesPath,
-    AttributePath>;
+    AttributePath,
+    AttributeValuePath>;
 }

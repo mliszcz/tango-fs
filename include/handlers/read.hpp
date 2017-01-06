@@ -66,6 +66,10 @@ public:
         return readData(path);
     }
 
+    int operator()(const paths::AttributeValuePath& path) const {
+        return readData(path);
+    }
+
     template <typename Path>
     int operator()(const Path&) const {
         return -EIO;
