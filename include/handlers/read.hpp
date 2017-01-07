@@ -24,9 +24,9 @@ private:
         int bytesRead = 0;
         auto dataSize = data.size();
 
-        if (offset < dataSize) {
+        if (offset < (off_t)dataSize) {
             bytesRead = (offset + size > dataSize) ? (dataSize - offset) : size;
-            std:copy_n(data.begin() + offset, bytesRead, buf);
+            std::copy_n(data.begin() + offset, bytesRead, buf);
         }
 
         return bytesRead;

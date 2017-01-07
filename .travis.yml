@@ -1,13 +1,21 @@
 sudo: required
 
+language: cpp
+
 notifications:
   email: false
 
 services:
   - docker
 
+before_install:
+  - pip install cpp-coveralls
+
 before_script:
   - docker build -t tango-fs-dev -f ./docker-dev/Dockerfile.fc25 .
 
 script:
   - ./docker-dev/bash -c 'mkdir -p build && cd build && cmake .. && make && ./tango-fs.test'
+
+after_success:
+  - coveralls --include src --include include --build-root build  --gcov-options '\-lp'

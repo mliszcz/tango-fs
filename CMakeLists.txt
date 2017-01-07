@@ -32,11 +32,20 @@ if(Boost_FOUND)
     add_executable(${PROJECT_NAME} ${SOURCES})
     target_link_libraries(${PROJECT_NAME} ${LIBS})
 
+
     file(GLOB TEST_SOURCES "test/*.cpp")
     add_executable(${PROJECT_NAME_TEST} ${TEST_SOURCES})
     target_link_libraries(${PROJECT_NAME_TEST}
                           ${LIBS}
-                          ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+                          ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+                          "-fprofile-arcs -ftest-coverage")
+
+    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -Wall)
+
+    target_compile_options(${PROJECT_NAME_TEST}
+                           PRIVATE
+                           -g -O0 -Wall -fprofile-arcs -ftest-coverage)
+
 
 endif()
 endif()
