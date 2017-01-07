@@ -1,0 +1,15 @@
+sudo: required
+
+notifications:
+  email: false
+
+services:
+  - docker
+
+before_script:
+  - docker build -t tango-fs-dev -f ./docker-dev/Dockerfile.fc25 .
+
+script:
+  - >
+    ./docker-dev/bash
+      -c 'mkdir -p build && cd build && cmake .. && make && ./tango-fs.test'

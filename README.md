@@ -49,7 +49,7 @@ $ ./tango-fs -h
 
   ```
 $ docker build -t tango-fs-dev -f ./docker-dev/Dockerfile.fc25 .
-$ ./docker-dev/tango-fs-dev
+$ ./docker-dev/bash
 
 $ mkdir build && cd build
 $ cmake ..

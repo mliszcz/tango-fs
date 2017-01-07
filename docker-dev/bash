@@ -7,6 +7,7 @@ WORKDIR=`pwd`
 
 docker run \
   -it \
+  --rm \
   --net host \
   --privileged \
   --user "$USER_UID:$USER_GID" \
@@ -16,4 +17,4 @@ docker run \
   -v /etc/passwd:/etc/passwd:ro \
   -v /etc/group:/etc/group:ro \
   tango-fs-dev \
-  /bin/bash
+  /bin/bash "$@"
