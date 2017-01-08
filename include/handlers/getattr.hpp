@@ -18,9 +18,11 @@ private:
 
     template <typename Path>
     void fillAsDirectory(const Path& path) const {
+        auto entries = lookup::directoryEntries(path)(tango::createDatabase,
+                                                      tango::createDeviceProxy);
         Stat stat {};
         stat.st_mode = S_IFDIR | 0755;
-        stat.st_nlink = 2 + lookup::directoryEntries(path).size();
+        stat.st_nlink = 2 + entries.size();
         *stbuf = stat;
     }
 
@@ -56,7 +58,10 @@ public:
     template <typename Path>
     int operator()(const Path& path) const {
 
-        auto size = lookup::fileContents(path)
+        auto db = tango::createDatabase;
+        auto dp = tango::createDeviceProxy;
+
+        auto size = lookup::fileContents(path)(db, dp)
             >= std::mem_fn(&std::string::size);
 
         Stat stat {};

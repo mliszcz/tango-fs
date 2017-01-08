@@ -35,7 +35,9 @@ private:
     template <typename Path>
     int readData(const Path& path) const {
         auto f = [&](const auto& s){ return this->readFromString(s); };
-        return (lookup::fileContents(path) >= f).get_value_or(-EIO);
+        auto db = tango::createDatabase;
+        auto dp = tango::createDeviceProxy;
+        return (lookup::fileContents(path)(db, dp) >= f).get_value_or(-EIO);
     }
 
 public:

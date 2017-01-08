@@ -25,7 +25,8 @@ private:
 
     template<typename Path>
     void fillDirectory(const Path& path) const {
-        auto entries = lookup::directoryEntries(path);
+        auto entries = lookup::directoryEntries(path)(tango::createDatabase,
+                                                      tango::createDeviceProxy);
         filler(buf, ".", nullptr, 0);
         filler(buf, "..", nullptr, 0);
         for (const auto& s : entries) {

@@ -9,66 +9,90 @@
 
 namespace lookup {
 
+/**
+ * Path -> (-> Database), (string -> DeviceProxy) -> set<string>
+ */
 template <typename Path>
 auto directoryEntries(const Path&) {
-    return std::set<std::string>{};
+    return [=](auto&&, auto&&) {
+        return std::set<std::string>{};
+    };
 }
 
 auto directoryEntries(const paths::DatabaseQueryPath& path) {
-    auto database = tango::createDatabase();
-    return tango::findDirectChildrenInDatabase(path.query)(database);
+    return [=](auto&& database, auto&&) {
+        return tango::findDirectChildrenInDatabase(path.query)(database());
+    };
 }
 
 auto directoryEntries(const paths::DeviceAttributesPath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    return tango::getDeviceAttributeList(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        auto proxy = deviceProxy(path.device);
+        return tango::getDeviceAttributeList(proxy);
+    };
 }
 
 auto directoryEntries(const paths::DevicePath&) {
-    return std::set<std::string>{"attributes",
-                                 "class",
-                                 "description",
-                                 "name",
-                                 "status"};
+    return [=](auto&&, auto&&) {
+        return std::set<std::string>{"attributes",
+                                     "class",
+                                     "description",
+                                     "name",
+                                     "status"};
+    };
 }
 
 auto directoryEntries(const paths::AttributePath&) {
-    return std::set<std::string>{"value"};
+    return [=](auto&&, auto&&) {
+        return std::set<std::string>{"value"};
+    };
 }
 
+/**
+ * Path -> (-> Database), (string -> DeviceProxy) -> Maybe<string>
+ */
 template <typename Path>
 auto fileContents(const Path&) {
-    return boost::optional<std::string>(boost::none);
+    return [=](auto&&, auto&&) {
+        return boost::optional<std::string>(boost::none);
+    };
 }
 
 auto fileContents(const paths::DeviceClassPath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    auto f = [](auto& p){ return p.info().dev_class; };
-    return tango::extractFromDeviceProxy(f)(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        auto f = [](auto& p){ return p.info().dev_class; };
+        return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
+    };
 }
 
 auto fileContents(const paths::DeviceDescriptionPath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    auto f = std::mem_fn(&Tango::DeviceProxy::description);
-    return tango::extractFromDeviceProxy(f)(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        auto f = std::mem_fn(&Tango::DeviceProxy::description);
+        return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
+    };
 }
 
 auto fileContents(const paths::DeviceNamePath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    auto f = std::mem_fn(&Tango::DeviceProxy::name);
-    return tango::extractFromDeviceProxy(f)(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        auto f = std::mem_fn(&Tango::DeviceProxy::name);
+        return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
+    };
 }
 
 auto fileContents(const paths::DeviceStatusPath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    auto f = std::mem_fn(&Tango::DeviceProxy::status);
-    return tango::extractFromDeviceProxy(f)(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        auto f = std::mem_fn(&Tango::DeviceProxy::status);
+        return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
+    };
 }
 
 auto fileContents(const paths::AttributeValuePath& path) {
-    auto proxy = tango::createDeviceProxy(path.device);
-    auto f = tango::extractStringFromDeviceAttribute;
-    return tango::extractFromDeviceAttribute(f)(path.attribute)(proxy);
+    return [=](auto&&, auto&& deviceProxy) {
+        return tango::extractFromDeviceAttribute
+            (tango::extractStringFromDeviceAttribute)
+            (path.attribute)
+            (deviceProxy(path.device));
+    };
 }
 
 }
