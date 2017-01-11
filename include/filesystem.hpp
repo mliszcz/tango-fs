@@ -52,7 +52,7 @@ constexpr auto makeFuseHandler = [](auto ...deps) {
         };
 
         auto f = [&](auto&& p) {
-            return handler(std::forward<decltype(p)>(p))(args...)(deps...);
+            return handler(std::forward<decltype(p)>(p))(path, args...)(deps...);
         };
 
         using namespace paths;
