@@ -4,18 +4,10 @@
 #include <paths.hpp>
 #include <tango.hpp>
 
-#include <boost/optional.hpp>
 #include <set>
 #include <string>
 
 namespace lookup {
-
-template <typename Path>
-auto directoryEntries(const Path&) {
-    return [=](auto&&...) {
-        return std::set<std::string>{};
-    };
-}
 
 auto directoryEntries(const paths::DatabaseQueryPath& path) {
     return [=](auto&& database, auto&&) {
@@ -43,13 +35,6 @@ auto directoryEntries(const paths::DevicePath&) {
 auto directoryEntries(const paths::AttributePath&) {
     return [=](auto&&...) {
         return std::set<std::string>{"value"};
-    };
-}
-
-template <typename Path>
-auto fileContents(const Path&) {
-    return [=](auto&&...) {
-        return boost::optional<std::string>(boost::none);
     };
 }
 

@@ -5,7 +5,6 @@
 
 #include <tango.h>
 
-#include <boost/optional.hpp>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -81,7 +80,7 @@ constexpr auto findDirectChildrenInDatabase = [](auto&& path) {
         auto result = (database
             >= [&](auto& db){ return db.get_device_exported(childrenPath); }
             >= extractFromDbDatum<std::vector<std::string>>)
-            .get_value_or({});
+            .value_or(std::vector<std::string>{});
 
 
         // + 1 to drop leading slash (root entries do not have this)
@@ -102,7 +101,7 @@ constexpr auto getDeviceAttributeList = [](auto&& proxy) {
     auto maybeData = proxy
         >= [](auto& p){ return std::shared_ptr<V>(p.get_attribute_list()); };
 
-    auto data = maybeData.get_value_or(std::make_shared<V>());
+    auto data = maybeData.value_or(std::make_shared<V>());
 
     return std::set<std::string>(data->begin(), data->end());
 };

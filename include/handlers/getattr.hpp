@@ -25,7 +25,7 @@ constexpr auto fillAsFile = [](const auto& path) {
             std::remove_reference_t<decltype(*stbuf)> stat {};
             stat.st_mode = S_IFREG | 0444;
             stat.st_nlink = 1;
-            stat.st_size = size.get_value_or(0);
+            stat.st_size = size.value_or(0);
             *stbuf = stat;
 
             return 0;

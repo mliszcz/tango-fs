@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <boost/format.hpp>
 #include <regex>
 #include <string>
 #include <utility>
@@ -53,7 +52,7 @@ namespace __detail {
 const std::string wordRegex = "[a-zA-Z-1-9\\._-]+";
 
 constexpr auto re = [&](const std::string& s) {
-    return std::regex(boost::str(boost::format(s) % wordRegex));
+    return std::regex(std::regex_replace(s, std::regex("%1%"), wordRegex));
 };
 
 const auto RE_ANY                = std::regex(".*");

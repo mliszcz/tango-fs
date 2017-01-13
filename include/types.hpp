@@ -4,16 +4,32 @@
 #include <tango.h>
 
 #include <algorithm>
-#include <boost/optional.hpp>
 #include <iostream>
 #include <stdexcept>
 
+#if __has_include(<optional>)
+
+#include <optional>
+namespace stdx {
+using namespace ::std;
+}
+
+#else
+
+#include <experimental/optional>
+namespace stdx {
+using namespace ::std;
+using namespace ::std::experimental;
+}
+
+#endif
+
 template <typename T>
-using Maybe = boost::optional<T>;
+using Maybe = stdx::optional<T>;
 
 template <typename T>
 constexpr inline auto Just(const T& t) {
-    return boost::make_optional(t);
+    return stdx::make_optional(t);
 }
 
 template <typename A, typename F>
@@ -29,7 +45,7 @@ inline auto operator>=(Maybe<A> s, F f) -> Maybe<decltype(f(*s))> {
             std::clog << "[ERROR] unknown exception\n";
         }
     }
-    return boost::none;
+    return stdx::nullopt;
 }
 
 template <template <typename ...U> typename C, typename A, typename F>

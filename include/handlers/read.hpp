@@ -35,7 +35,7 @@ constexpr auto readData = [](const auto& path) {
                 (std::forward<decltype(deps)>(deps)...)
                 >= readFromString;
 
-            return size.get_value_or(-EIO);
+            return size.value_or(-EIO);
         };
     };
 };
