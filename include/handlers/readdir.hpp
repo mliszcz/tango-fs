@@ -1,74 +1,60 @@
 
 #pragma once
 
-#include <paths.hpp>
-#include <tango.hpp>
-#include <types.hpp>
-
 #include <lookup.hpp>
+#include <paths.hpp>
 
 #include <fuse.h>
-#include <tango.h>
 
-#include <boost/variant.hpp>
+#include <utility>
 
 namespace handlers {
 
-class readdir : boost::static_visitor<int> {
+namespace __detail {
 
-private:
+constexpr auto fillDirectory = [](const auto& path) {
+    return [&](auto p, auto buf, auto filler, auto...) {
+        return [=, &path](auto&&... deps) {
 
-    void* buf;
-    fuse_fill_dir_t filler;
-    off_t offset;
-    struct fuse_file_info* fi;
+            auto entries = lookup::directoryEntries(path)
+                (std::forward<decltype(deps)>(deps)...);
 
-    template<typename Path>
-    void fillDirectory(const Path& path) const {
-        auto entries = lookup::directoryEntries(path)(tango::createDatabase,
-                                                      tango::createDeviceProxy);
-        filler(buf, ".", nullptr, 0);
-        filler(buf, "..", nullptr, 0);
-        for (const auto& s : entries) {
-            filler(buf, s.c_str(), nullptr, 0);
-        }
-    }
+            filler(buf, ".", nullptr, 0);
+            filler(buf, "..", nullptr, 0);
+            for (const auto& s : entries) {
+                filler(buf, s.c_str(), nullptr, 0);
+            }
 
-public:
-
-    readdir(void* buf,
-            fuse_fill_dir_t filler,
-            off_t offset,
-            struct fuse_file_info* fi)
-        : buf(buf)
-        , filler(filler)
-        , offset(offset)
-        , fi(fi) {}
-
-    int operator()(const paths::DatabaseQueryPath& path) const {
-        fillDirectory(path);
-        return 0;
-    }
-
-    int operator()(const paths::DevicePath& path) const {
-        fillDirectory(path);
-        return 0;
-    }
-
-    int operator()(const paths::DeviceAttributesPath& path) const {
-        fillDirectory(path);
-        return 0;
-    }
-
-    int operator()(const paths::AttributePath& path) const {
-        fillDirectory(path);
-        return 0;
-    }
-
-    template <typename Path>
-    int operator()(const Path&) const {
-        return -ENOENT;
-    }
+            return 0;
+        };
+    };
 };
 
+} // namespace __detail
+
+template <typename Path>
+auto readdir(const Path&) {
+    return [](auto...) {
+        return [](auto&&...) {
+            return -ENOENT;
+        };
+    };
 }
+
+auto readdir(const paths::DatabaseQueryPath& path) {
+    return __detail::fillDirectory(path);
+}
+
+auto readdir(const paths::DevicePath& path) {
+    return __detail::fillDirectory(path);
+}
+
+auto readdir(const paths::DeviceAttributesPath& path) {
+    return __detail::fillDirectory(path);
+}
+
+auto readdir(const paths::AttributePath& path) {
+    return __detail::fillDirectory(path);
+}
+
+} // namespace handlers

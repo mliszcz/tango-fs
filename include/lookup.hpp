@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <paths.hpp>
 #include <tango.hpp>
 
 #include <boost/optional.hpp>
@@ -9,12 +10,9 @@
 
 namespace lookup {
 
-/**
- * Path -> (-> Database), (string -> DeviceProxy) -> set<string>
- */
 template <typename Path>
 auto directoryEntries(const Path&) {
-    return [=](auto&&, auto&&) {
+    return [=](auto&&...) {
         return std::set<std::string>{};
     };
 }
@@ -33,7 +31,7 @@ auto directoryEntries(const paths::DeviceAttributesPath& path) {
 }
 
 auto directoryEntries(const paths::DevicePath&) {
-    return [=](auto&&, auto&&) {
+    return [=](auto&&...) {
         return std::set<std::string>{"attributes",
                                      "class",
                                      "description",
@@ -43,17 +41,14 @@ auto directoryEntries(const paths::DevicePath&) {
 }
 
 auto directoryEntries(const paths::AttributePath&) {
-    return [=](auto&&, auto&&) {
+    return [=](auto&&...) {
         return std::set<std::string>{"value"};
     };
 }
 
-/**
- * Path -> (-> Database), (string -> DeviceProxy) -> Maybe<string>
- */
 template <typename Path>
 auto fileContents(const Path&) {
-    return [=](auto&&, auto&&) {
+    return [=](auto&&...) {
         return boost::optional<std::string>(boost::none);
     };
 }
@@ -95,4 +90,4 @@ auto fileContents(const paths::AttributeValuePath& path) {
     };
 }
 
-}
+} // namespace lookup

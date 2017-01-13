@@ -1,8 +1,10 @@
 
 #pragma once
 
+#include <boost/format.hpp>
+#include <regex>
 #include <string>
-#include <boost/variant.hpp>
+#include <utility>
 
 namespace paths {
 
@@ -46,15 +48,70 @@ struct AttributeValuePath {
     std::string attribute;
 };
 
-using AnyPath = boost::variant<
-    InvalidPath,
-    DatabaseQueryPath,
-    DevicePath,
-    DeviceClassPath,
-    DeviceDescriptionPath,
-    DeviceNamePath,
-    DeviceStatusPath,
-    DeviceAttributesPath,
-    AttributePath,
-    AttributeValuePath>;
-}
+namespace __detail {
+
+const std::string wordRegex = "[a-zA-Z-1-9\\._-]+";
+
+constexpr auto re = [&](const std::string& s) {
+    return std::regex(boost::str(boost::format(s) % wordRegex));
+};
+
+const auto RE_ANY                = std::regex(".*");
+const auto RE_ROOT               = std::regex("/?");
+const auto RE_DOMAIN             = re("/(%1%)/?");
+const auto RE_FAMILY             = re("/(%1%/%1%)/?");
+const auto RE_DEVICE             = re("/(%1%/%1%/%1%)/?");
+const auto RE_DEVICE_CLASS       = re("/(%1%/%1%/%1%)/class");
+const auto RE_DEVICE_DESCRIPTION = re("/(%1%/%1%/%1%)/description");
+const auto RE_DEVICE_NAME        = re("/(%1%/%1%/%1%)/name");
+const auto RE_DEVICE_STATUS      = re("/(%1%/%1%/%1%)/status");
+const auto RE_DEVICE_ATTRIBUTES  = re("/(%1%/%1%/%1%)/attributes/?");
+const auto RE_ATTRIBUTE          = re("/(%1%/%1%/%1%)/attributes/(%1%)/?");
+const auto RE_ATTRIBUTE_VALUE    = re("/(%1%/%1%/%1%)/attributes/(%1%)/value");
+
+} // namespace __detail
+
+constexpr auto makeFuseHandler = [](auto ...deps) {
+
+    // TODO: forward lambda arguments
+    // unfortunately, currently GCC does not allow for sth like
+    // [args = std::forward<decltype(args)>(args)...](){}
+
+    // TODO: explicit captures are required (probably) due to GCC bug
+    // warning: 'args#-1' is used uninitialized in this function
+
+    return [deps...](auto&& handler) {
+    return [handler, deps...](auto path, auto ...args) {
+
+        std::string p{path};
+        std::smatch m{};
+
+        auto match = [&](auto&&... a) {
+            return regex_match(p, m, std::forward<decltype(a)>(a)...);
+        };
+
+        auto f = [&](auto&& p) {
+            return handler(std::forward<decltype(p)>(p))(path, args...)(deps...);
+        };
+
+        using namespace __detail;
+
+        if (match(RE_ROOT))               return f(DatabaseQueryPath{""});
+        if (match(RE_DOMAIN))             return f(DatabaseQueryPath{m[1]});
+        if (match(RE_FAMILY))             return f(DatabaseQueryPath{m[1]});
+        if (match(RE_DEVICE))             return f(DevicePath{m[1]});
+        if (match(RE_DEVICE_CLASS))       return f(DeviceClassPath{m[1]});
+        if (match(RE_DEVICE_DESCRIPTION)) return f(DeviceDescriptionPath{m[1]});
+        if (match(RE_DEVICE_NAME))        return f(DeviceNamePath{m[1]});
+        if (match(RE_DEVICE_STATUS))      return f(DeviceStatusPath{m[1]});
+        if (match(RE_DEVICE_ATTRIBUTES))  return f(DeviceAttributesPath{m[1]});
+        if (match(RE_ATTRIBUTE))          return f(AttributePath{m[1], m[2]});
+        if (match(RE_ATTRIBUTE_VALUE))    return f(AttributeValuePath{m[1], m[2]});
+
+        return f(InvalidPath{});
+
+    };
+    };
+};
+
+} // namespace paths

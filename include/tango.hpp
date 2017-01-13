@@ -26,7 +26,7 @@ auto removeStringAfter(std::string::value_type c) {
     return [=](const std::string& text) {
         return text.substr(0, text.find(c));
     };
-}
+} // namespace __detail
 
 constexpr auto appendTrailingNewline = [](const auto& s) { return s + "\n"; };
 
@@ -37,11 +37,7 @@ Maybe<Tango::DeviceProxy> createDeviceProxy(std::string path) {
 }
 
 Maybe<Tango::Database> createDatabase() {
-    try {
-        return Tango::Database();
-    }  catch (...) {
-        return boost::none;
-    }
+    return Just(nullptr) >= [](auto){ return Tango::Database(); };
 }
 
 template <typename T>
@@ -87,6 +83,7 @@ constexpr auto findDirectChildrenInDatabase = [](auto&& path) {
             >= extractFromDbDatum<std::vector<std::string>>)
             .get_value_or({});
 
+
         // + 1 to drop leading slash (root entries do not have this)
         auto prefix = path.empty() ? 0 : (path.size() + 1);
 
@@ -110,4 +107,4 @@ constexpr auto getDeviceAttributeList = [](auto&& proxy) {
     return std::set<std::string>(data->begin(), data->end());
 };
 
-}
+} // namespace tango

@@ -1,81 +1,74 @@
 
 #pragma once
 
+#include <lookup.hpp>
 #include <paths.hpp>
-#include <tango.hpp>
+#include <types.hpp>
 
 #include <fuse.h>
-#include <boost/variant.hpp>
+
+#include <algorithm>
+#include <utility>
 
 namespace handlers {
 
+namespace __detail {
 
-class read : boost::static_visitor<int> {
+constexpr auto readData = [](const auto& path) {
+    return [&](auto, auto buf, auto size, auto offset, auto fi) {
+        return [=, &path](auto&&... deps) {
 
-private:
+            auto readFromString = [&](const auto& data) {
 
-    char* buf;
-    size_t size;
-    off_t offset;
-    struct fuse_file_info* fi;
+                auto bytesRead = 0;
+                auto dataSize = data.size();
 
-    int readFromString(std::string data) const {
+                if (offset < (decltype(offset))dataSize) {
+                    bytesRead = std::min<int>(dataSize - offset, size);
+                    std::copy_n(data.begin() + offset, bytesRead, buf);
+                }
 
-        int bytesRead = 0;
-        auto dataSize = data.size();
+                return bytesRead;
+            };
 
-        if (offset < (off_t)dataSize) {
-            bytesRead = (offset + size > dataSize) ? (dataSize - offset) : size;
-            std::copy_n(data.begin() + offset, bytesRead, buf);
-        }
+            auto size = lookup::fileContents(path)
+                (std::forward<decltype(deps)>(deps)...)
+                >= readFromString;
 
-        return bytesRead;
-    }
-
-    template <typename Path>
-    int readData(const Path& path) const {
-        auto f = [&](const auto& s){ return this->readFromString(s); };
-        auto db = tango::createDatabase;
-        auto dp = tango::createDeviceProxy;
-        return (lookup::fileContents(path)(db, dp) >= f).get_value_or(-EIO);
-    }
-
-public:
-
-    read(char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
-        : buf(buf)
-        , size(size)
-        , offset(offset)
-        , fi(fi) {}
-
-    int operator()(const paths::InvalidPath&) const {
-        return -ENOENT;
-    }
-
-    int operator()(const paths::DeviceClassPath& path) const {
-        return readData(path);
-    }
-
-    int operator()(const paths::DeviceDescriptionPath& path) const {
-        return readData(path);
-    }
-
-    int operator()(const paths::DeviceNamePath& path) const {
-        return readData(path);
-    }
-
-    int operator()(const paths::DeviceStatusPath& path) const {
-        return readData(path);
-    }
-
-    int operator()(const paths::AttributeValuePath& path) const {
-        return readData(path);
-    }
-
-    template <typename Path>
-    int operator()(const Path&) const {
-        return -EIO;
-    }
+            return size.get_value_or(-EIO);
+        };
+    };
 };
 
+} // namespace __detail
+
+auto read(const paths::DeviceClassPath& path) {
+    return __detail::readData(path);
 }
+
+auto read(const paths::DeviceDescriptionPath& path) {
+    return __detail::readData(path);
+}
+
+auto read(const paths::DeviceNamePath& path) {
+    return __detail::readData(path);
+}
+
+auto read(const paths::DeviceStatusPath& path) {
+    return __detail::readData(path);
+}
+
+auto read(const paths::AttributeValuePath& path) {
+    return __detail::readData(path);
+}
+
+template <typename Path>
+auto read(const Path&) {
+    return [](auto...) {
+        return [](auto&&...) {
+            return -EIO;
+        };
+    };
+}
+
+} // namespace handlers

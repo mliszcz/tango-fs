@@ -3,6 +3,7 @@
 
 #include <lookup.hpp>
 #include <paths.hpp>
+#include <types.hpp>
 
 #include <fuse.h>
 
