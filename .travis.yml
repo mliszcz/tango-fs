@@ -19,4 +19,4 @@ script:
 
 after_success:
   - coveralls --include include --build-root build  --gcov-options '\-lp'
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -f '!test/*'
