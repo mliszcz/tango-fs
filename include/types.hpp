@@ -7,6 +7,8 @@
 #include <iostream>
 #include <stdexcept>
 
+// TODO: remove if when gcc 7 is released
+
 #if __has_include(<optional>)
 
 #include <optional>

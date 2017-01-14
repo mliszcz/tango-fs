@@ -14,8 +14,8 @@ Requirements:
 
 * libtango,
 * libfuse,
-* libboost (unit tests only),
-* boost, tango and fuse headers (build only),
+* googletest, googlemock (unit tests only)
+* tango and fuse headers (build only),
 * C++14-enabled compiler (build only).
 
 See `docker-dev` directory for ready-to-go Fedora and Ubuntu images.
@@ -54,6 +54,8 @@ $ ./docker-dev/bash
 $ mkdir build && cd build
 $ cmake ..
 $ make
+
+$ ./tango-ts.test
 
 $ mkdir mnt
 $ TANGO_HOST=172.18.0.3:10000 ./tango-fs mnt &

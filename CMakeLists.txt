@@ -1,52 +1,58 @@
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.2.0)
 
-set(PROJECT_NAME "tango-fs")
-set(PROJECT_NAME_TEST   "tango-fs.test")
+set(PROJECT_MAIN "tango-fs")
+set(PROJECT_TEST "tango-fs.test")
 
-set(CMAKE_MODULE_PATH
-    ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+set(CMAKE_CXX_STANDARD 14)
 
-project (${PROJECT_NAME})
+project (${PROJECT_MAIN})
 
 find_package(fuse 3.0 REQUIRED)
 find_package(tango 8.0 REQUIRED)
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_package(GTest)
+find_package(GMock)
 
 if(FUSE_FOUND)
 if(TANGO_FOUND)
-if(Boost_FOUND)
 
-    add_definitions(${FUSE_DEFINITIONS})
-    add_definitions(-std=c++14)
+    # required by fuse
+    add_definitions(-D_FILE_OFFSET_BITS=64)
 
     include_directories(${FUSE_INCLUDE_DIRS})
     include_directories(${TANGO_INCLUDE_DIRS})
-    include_directories(${Boost_INCLUDE_DIRS})
-    include_directories(include)
+    include_directories("include")
 
     set(LIBS ${LIBS} ${FUSE_LIBRARIES})
     set(LIBS ${LIBS} ${TANGO_LIBRARIES})
     set(LIBS ${LIBS} ${TANGO_LDFLAGS})
 
-    file(GLOB_RECURSE SOURCES "src/*.cpp")
-    add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} ${LIBS})
+    file(GLOB_RECURSE SOURCES_MAIN "src/*.cpp")
+    add_executable(${PROJECT_MAIN} ${SOURCES_MAIN})
+    target_link_libraries(${PROJECT_MAIN} ${LIBS})
+    target_compile_options(${PROJECT_MAIN} PRIVATE -O3 -Wall)
 
+    if(GTest_FOUND)
+    if(GMock_FOUND)
 
-    file(GLOB TEST_SOURCES "test/*.cpp")
-    add_executable(${PROJECT_NAME_TEST} ${TEST_SOURCES})
-    target_link_libraries(${PROJECT_NAME_TEST}
-                          ${LIBS}
-                          ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
-                          "-fprofile-arcs -ftest-coverage")
+        file(GLOB_RECURSE SOURCES_TEST "test/*.cpp")
+        add_executable(${PROJECT_TEST} ${SOURCES_TEST})
+        target_link_libraries(${PROJECT_TEST}
+                              -Wl,-Bstatic -lgtest -lgmock -lgmock_main
+                              -Wl,-Bdynamic -lpthread
+                              ${LIBS}
+                              -fprofile-arcs
+                              -ftest-coverage)
 
-    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -Wall)
+        target_include_directories(${PROJECT_TEST} PRIVATE
+                                   ${GTEST_INCLUDE_DIRS}
+                                   ${GMOCK_INCLUDE_DIRS})
 
-    target_compile_options(${PROJECT_NAME_TEST}
-                           PRIVATE
-                           -g -O0 -Wall -fprofile-arcs -ftest-coverage)
+        target_compile_options(${PROJECT_TEST} PRIVATE
+                               -g -O0 -Wall -fprofile-arcs -ftest-coverage)
 
+    endif()
+    endif()
 
-endif()
 endif()
 endif()

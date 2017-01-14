@@ -7,44 +7,65 @@
 
 namespace paths {
 
-struct InvalidPath {};
+struct InvalidPath {
+    auto tie() const { return std::tie(); }
+    auto operator==(const InvalidPath& p) const { return tie() == p.tie(); }
+};
 
 struct DatabaseQueryPath {
     std::string query;
+    auto tie() const { return std::tie(query); }
+    auto operator==(const DatabaseQueryPath& p) const { return tie() == p.tie(); }
 };
 
 struct DevicePath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DevicePath& p) const { return tie() == p.tie(); }
 };
 
 struct DeviceClassPath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DeviceClassPath& p) const { return tie() == p.tie(); }
 };
 
 struct DeviceDescriptionPath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DeviceDescriptionPath& p) const { return tie() == p.tie(); }
 };
 
 struct DeviceNamePath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DeviceNamePath& p) const { return tie() == p.tie(); }
 };
 
 struct DeviceStatusPath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DeviceStatusPath& p) const { return tie() == p.tie(); }
 };
 
 struct DeviceAttributesPath {
     std::string device;
+    auto tie() const { return std::tie(device); }
+    auto operator==(const DeviceAttributesPath& p) const { return tie() == p.tie(); }
 };
 
 struct AttributePath {
     std::string device;
     std::string attribute;
+    auto tie() const { return std::tie(device, attribute); }
+    auto operator==(const AttributePath& p) const { return tie() == p.tie(); }
 };
 
 struct AttributeValuePath {
     std::string device;
     std::string attribute;
+    auto tie() const { return std::tie(device, attribute); }
+    auto operator==(const AttributeValuePath& p) const { return tie() == p.tie(); }
 };
 
 namespace __detail {

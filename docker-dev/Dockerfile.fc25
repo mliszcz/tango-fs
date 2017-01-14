@@ -11,6 +11,7 @@ gpgcheck=0\n\
 '> /etc/yum.repos.d/maxiv.repo
 
 RUN dnf -y install \
+    git \
     which \
     hostname \
     tree \
@@ -18,7 +19,21 @@ RUN dnf -y install \
     cmake \
     gcc \
     gcc-c++ \
-    boost-devel \
     fuse \
     fuse-devel \
     libtango9-devel
+
+RUN mkdir -p /usr/local/lib64 \
+    && mkdir -p /usr/local/include \
+    && git clone --depth 1 --branch release-1.8.0 \
+        https://github.com/google/googletest \
+    && mkdir -p googletest/build \
+    && pushd googletest/build \
+    && cmake .. \
+    && make \
+    && cp googlemock/libgmock* /usr/local/lib64/ \
+    && cp googlemock/gtest/libgtest* /usr/local/lib64/ \
+    && cp -r ../googlemock/include/* /usr/local/include/ \
+    && cp -r ../googletest/include/* /usr/local/include/ \
+    && popd \
+    && rm -rf googletest
