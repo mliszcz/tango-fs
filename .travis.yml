@@ -18,5 +18,5 @@ script:
   - ./docker-dev/bash -c 'mkdir -p build && cd build && cmake .. && make && ./tango-fs.test'
 
 after_success:
-  - coveralls --exclude test --build-root build --gcov-options '\-lp'
+  - coveralls --include include --build-root build --gcov-options '\-lp'
   - bash <(curl -s https://codecov.io/bash)
