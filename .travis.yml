@@ -19,3 +19,4 @@ script:
 
 after_success:
   - coveralls --include src --include include --build-root build  --gcov-options '\-lp'
+  - bash <(curl -s https://codecov.io/bash)
