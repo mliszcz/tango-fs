@@ -15,27 +15,29 @@ namespace tango {
 
 namespace __detail {
 
-auto removeStringPrefix(std::string::size_type prefix) {
-    return [=](const std::string& text) {
+constexpr auto removeStringPrefix = [](auto prefix) {
+    return [=](const auto& text) {
         return text.substr(prefix);
     };
-}
+};
 
-auto removeStringAfter(std::string::value_type c) {
-    return [=](const std::string& text) {
+constexpr auto removeStringAfter = [](auto c) {
+    return [=](const auto& text) {
         return text.substr(0, text.find(c));
     };
+};
+
+constexpr auto appendTrailingNewline = [](const auto& s) {
+    return s + "\n";
+};
+
 } // namespace __detail
 
-constexpr auto appendTrailingNewline = [](const auto& s) { return s + "\n"; };
-
-}
-
-Maybe<Tango::DeviceProxy> createDeviceProxy(std::string path) {
+inline Maybe<Tango::DeviceProxy> createDeviceProxy(std::string path) {
     return Just(path) >= [](auto s){ return Tango::DeviceProxy(s); };
 }
 
-Maybe<Tango::Database> createDatabase() {
+inline Maybe<Tango::Database> createDatabase() {
     return Just(nullptr) >= [](auto){ return Tango::Database(); };
 }
 
