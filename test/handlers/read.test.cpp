@@ -96,26 +96,25 @@ TEST_F(HandlerReadTestSuite, shouldReadDeviceStatus) {
     testSuccessfulRead(paths::DeviceStatusPath{path}, data);
 }
 
-// TEST_F(HandlerReadTestSuite, shouldReadAttributeValue) {
-//
-//     auto path = "my/dev/1"s;
-//     auto attr = "my_attribute"s;
-//     auto data = "some value"s;
-//
-//     StrictMock<DbDatumMock> dbDatumMock{};
-//
-//     EXPECT_CALL(dbDatumMock, ostream(_))
-//         .WillOnce(Invoke([&](auto& s) { s << data; }));
-//
-//     EXPECT_CALL(deviceProxyProviderMock, call({path}))
-//         .WillOnce(ReturnRef(deviceProxyMock));
-//
-//     EXPECT_CALL(*deviceProxyMock, read_attribute(_))
-//         // .WillOnce(ReturnRef(dbDatumMock));
-//         .WillOnce(ReturnRef(dbDatumMock));
-//
-//     testSuccessfulRead(paths::AttributeValuePath{path, attr}, data);
-// }
+TEST_F(HandlerReadTestSuite, shouldReadAttributeValue) {
+
+    auto path = "my/dev/1"s;
+    auto attr = "my_attribute"s;
+    auto data = "some value"s;
+
+    StrictMock<DeviceAttributeMock> attributeMock{};
+
+    EXPECT_CALL(attributeMock, ostream(_))
+        .WillOnce(Invoke([&](auto& s) { s << data; }));
+
+    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+        .WillOnce(ReturnRef(deviceProxyMock));
+
+    EXPECT_CALL(*deviceProxyMock, read_attribute(_))
+        .WillOnce(ReturnRefOfCopy(DeviceAttributeMockWrapper{attributeMock}));
+
+    testSuccessfulRead(paths::AttributeValuePath{path, attr}, data);
+}
 
 
 } // namespace handlers

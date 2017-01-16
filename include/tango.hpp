@@ -53,7 +53,7 @@ constexpr auto extractValueFromDeviceAttribute = extractFromDbDatum<T>;
 
 constexpr auto extractStringFromDeviceAttribute = [](auto&& deviceAttribute) {
     std::ostringstream oss{};
-    oss << deviceAttribute << "\n";
+    oss << deviceAttribute;
     return oss.str();
 };
 
