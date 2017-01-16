@@ -33,6 +33,12 @@ struct HandlerReadTestSuite : Test {
         ASSERT_EQ(expectedData + "\n", std::string(buffer, readSize));
     }
 
+    template <typename Path>
+    void testUnsuccessfulRead(Path&& path) {
+
+        ASSERT_EQ(-EIO, read(std::forward<Path>(path))(0)(0));
+    }
+
     char buffer[128];
     int bufferSize{sizeof(buffer)};
 
@@ -116,5 +122,60 @@ TEST_F(HandlerReadTestSuite, shouldReadAttributeValue) {
     testSuccessfulRead(paths::AttributeValuePath{path, attr}, data);
 }
 
+TEST_F(HandlerReadTestSuite, shouldNotReadFromInvalidPath) {
+    testUnsuccessfulRead(paths::InvalidPath{});
+}
+
+TEST_F(HandlerReadTestSuite, shouldNotReadFromDatabaseQueryPath) {
+    testUnsuccessfulRead(paths::DatabaseQueryPath{"path"});
+}
+
+TEST_F(HandlerReadTestSuite, shouldNotReadFromDevicePath) {
+    testUnsuccessfulRead(paths::DevicePath{"a/b/c"});
+}
+
+TEST_F(HandlerReadTestSuite, shouldNotReadFromDeviceAttributesPath) {
+    testUnsuccessfulRead(paths::DeviceAttributesPath{"a/b/c"});
+}
+
+TEST_F(HandlerReadTestSuite, shouldNotReadFromAttributePath) {
+    testUnsuccessfulRead(paths::AttributePath{"a/b/c", "m"});
+}
+
+TEST_F(HandlerReadTestSuite, shouldReadStartingFromOffset) {
+
+    auto path = "my/dev/1"s;
+    auto data = "longdata"s;
+
+    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+        .WillOnce(ReturnRef(deviceProxyMock));
+
+    EXPECT_CALL(*deviceProxyMock, name()).WillOnce(Return(data));
+
+    auto readSize = read
+        (paths::DeviceNamePath{path})
+        ("", buffer, bufferSize, 3, 0)
+        (databaseProviderMock, deviceProxyProviderMock);
+
+    ASSERT_EQ("gdata\n", std::string(buffer, readSize));
+}
+
+TEST_F(HandlerReadTestSuite, shouldReadNothingIfOffsetExceedsLength) {
+
+    auto path = "my/dev/1"s;
+    auto data = "data"s;
+
+    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+        .WillOnce(ReturnRef(deviceProxyMock));
+
+    EXPECT_CALL(*deviceProxyMock, name()).WillOnce(Return(data));
+
+    auto readSize = read
+        (paths::DeviceNamePath{path})
+        ("", buffer, bufferSize, data.size() + 1, 0)
+        (databaseProviderMock, deviceProxyProviderMock);
+
+    ASSERT_EQ(0, readSize);
+}
 
 } // namespace handlers
