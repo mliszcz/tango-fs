@@ -80,7 +80,7 @@ constexpr auto findDirectChildrenInDatabase = [](auto&& path) {
         auto childrenPath = path + "*";
 
         auto result = (database
-            >= [&](auto& db){ return db.get_device_exported(childrenPath); }
+            >= [&](auto&& db){ return db.get_device_exported(childrenPath); }
             >= extractFromDbDatum<std::vector<std::string>>)
             .value_or(std::vector<std::string>{});
 

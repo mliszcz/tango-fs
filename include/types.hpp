@@ -30,12 +30,17 @@ template <typename T>
 using Maybe = stdx::optional<T>;
 
 template <typename T>
-constexpr inline auto Just(const T& t) {
-    return stdx::make_optional(t);
+constexpr inline auto Just(T&& t) {
+    return stdx::make_optional(std::forward<decltype(t)>(t));
 }
 
 template <typename A, typename F>
-inline auto operator>=(Maybe<A> s, F f) -> Maybe<decltype(f(*s))> {
+inline auto operator>=(Maybe<A>& s, F f) -> Maybe<decltype(f(*s))> {
+    return std::move(s) >= f;
+}
+
+template <typename A, typename F>
+inline auto operator>=(Maybe<A>&& s, F f) -> Maybe<decltype(f(*s))> {
     if (s) {
         try {
             return f(*s);

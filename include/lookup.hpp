@@ -47,21 +47,21 @@ inline auto fileContents(const paths::DeviceClassPath& path) {
 
 inline auto fileContents(const paths::DeviceDescriptionPath& path) {
     return [=](auto&&, auto&& deviceProxy) {
-        auto f = std::mem_fn(&Tango::DeviceProxy::description);
+        auto f = [](auto& p){ return p.description(); };
         return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
     };
 }
 
 inline auto fileContents(const paths::DeviceNamePath& path) {
     return [=](auto&&, auto&& deviceProxy) {
-        auto f = std::mem_fn(&Tango::DeviceProxy::name);
+        auto f = [](auto& p){ return p.name(); };
         return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
     };
 }
 
 inline auto fileContents(const paths::DeviceStatusPath& path) {
     return [=](auto&&, auto&& deviceProxy) {
-        auto f = std::mem_fn(&Tango::DeviceProxy::status);
+        auto f = [](auto& p){ return p.status(); };
         return tango::extractFromDeviceProxy(f)(deviceProxy(path.device));
     };
 }

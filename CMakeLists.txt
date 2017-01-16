@@ -46,7 +46,8 @@ if(TANGO_FOUND)
 
         target_include_directories(${PROJECT_TEST} PRIVATE
                                    ${GTEST_INCLUDE_DIRS}
-                                   ${GMOCK_INCLUDE_DIRS})
+                                   ${GMOCK_INCLUDE_DIRS}
+                                   "test")
 
         target_compile_options(${PROJECT_TEST} PRIVATE
                                -g -O0 -Wall -fprofile-arcs -ftest-coverage)
