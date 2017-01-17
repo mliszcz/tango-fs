@@ -17,31 +17,44 @@ struct FunctionMock {
     }
 };
 
+struct DbDatumMock {
+    MOCK_CONST_METHOD0(toStringVector, std::vector<std::string>());
+};
+
+struct DbDatumMockWrapper {
+    DbDatumMock& mock;
+};
+
+inline void operator>>(const DbDatumMockWrapper& w,
+                       std::vector<std::string>& s) {
+    s = w.mock.toStringVector();
+}
+
 struct DeviceAttributeMock {
     MOCK_CONST_METHOD1(ostream, void(std::ostream&));
 };
-
-std::ostream& operator<<(std::ostream& s, const DeviceAttributeMock& m) {
-    m.ostream(s);
-    return s;
-}
 
 struct DeviceAttributeMockWrapper {
     DeviceAttributeMock& mock;
 };
 
-std::ostream& operator<<(std::ostream& s, const DeviceAttributeMockWrapper& w) {
-    return s << w.mock;
+inline std::ostream& operator<<(std::ostream& s,
+                                const DeviceAttributeMockWrapper& w) {
+    w.mock.ostream(s);
+    return s;
 }
 
 struct DeviceInfoMock {
     std::string dev_class;
 };
 
-struct DatabaseMock {};
+struct DatabaseMock {
+    MOCK_CONST_METHOD1(get_device_exported, DbDatumMockWrapper&(std::string));
+};
 
 struct DeviceProxyMock {
     MOCK_CONST_METHOD1(read_attribute, DeviceAttributeMockWrapper&(const char*));
+    MOCK_CONST_METHOD0(get_attribute_list, std::vector<std::string>*());
     MOCK_CONST_METHOD0(info, DeviceInfoMock&());
     MOCK_CONST_METHOD0(description, std::string());
     MOCK_CONST_METHOD0(name, std::string());

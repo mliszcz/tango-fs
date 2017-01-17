@@ -13,8 +13,8 @@ namespace handlers {
 namespace __detail {
 
 constexpr auto fillDirectory = [](const auto& path) {
-    return [&](auto p, auto buf, auto filler, auto...) {
-        return [=, &path](auto&&... deps) {
+    return [&](auto, auto buf, auto filler, auto, auto) {
+        return [=, &path](auto&... deps) {
 
             auto entries = lookup::directoryEntries(path)
                 (std::forward<decltype(deps)>(deps)...);
@@ -32,15 +32,6 @@ constexpr auto fillDirectory = [](const auto& path) {
 
 } // namespace __detail
 
-template <typename Path>
-auto readdir(const Path&) {
-    return [](auto...) {
-        return [](auto&&...) {
-            return -ENOENT;
-        };
-    };
-}
-
 auto readdir(const paths::DatabaseQueryPath& path) {
     return __detail::fillDirectory(path);
 }
@@ -55,6 +46,15 @@ auto readdir(const paths::DeviceAttributesPath& path) {
 
 auto readdir(const paths::AttributePath& path) {
     return __detail::fillDirectory(path);
+}
+
+template <typename Path>
+auto readdir(const Path&) {
+    return [](auto...) {
+        return [](auto&&...) {
+            return -EIO;
+        };
+    };
 }
 
 } // namespace handlers

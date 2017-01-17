@@ -17,13 +17,12 @@ inline auto directoryEntries(const paths::DatabaseQueryPath& path) {
 
 inline auto directoryEntries(const paths::DeviceAttributesPath& path) {
     return [=](auto&&, auto&& deviceProxy) {
-        auto proxy = deviceProxy(path.device);
-        return tango::getDeviceAttributeList(proxy);
+        return tango::getDeviceAttributeList(deviceProxy(path.device));
     };
 }
 
 inline auto directoryEntries(const paths::DevicePath&) {
-    return [=](auto&&...) {
+    return [=](auto&&, auto&&) {
         return std::set<std::string>{"attributes",
                                      "class",
                                      "description",
@@ -33,7 +32,7 @@ inline auto directoryEntries(const paths::DevicePath&) {
 }
 
 inline auto directoryEntries(const paths::AttributePath&) {
-    return [=](auto&&...) {
+    return [=](auto&&, auto&&) {
         return std::set<std::string>{"value"};
     };
 }
