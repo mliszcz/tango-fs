@@ -1,4 +1,7 @@
 
+[![Travis](https://img.shields.io/travis/mliszcz/tango-fs.svg)](https://travis-ci.org/mliszcz/tango-fs)
+[![Coveralls](https://img.shields.io/coveralls/mliszcz/tango-fs.svg)](https://coveralls.io/github/mliszcz/tango-fs)
+
 # tango-fs
 
 This is a proof-of-concept of a FUSE interface for TANGO Control System.
