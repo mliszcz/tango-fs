@@ -54,7 +54,7 @@ TEST_F(HandlerReadTestSuite, shouldReadDeviceClass) {
     auto path = "my/dev/1"s;
     auto data = "clazz"s;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, info())
@@ -68,7 +68,7 @@ TEST_F(HandlerReadTestSuite, shouldReadDeviceDescription) {
     auto path = "my/dev/1"s;
     auto data = "this is a device"s;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, description()).WillOnce(Return(data));
@@ -81,7 +81,7 @@ TEST_F(HandlerReadTestSuite, shouldReadDeviceName) {
     auto path = "my/dev/1"s;
     auto data = path;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, name()).WillOnce(Return(data));
@@ -94,7 +94,7 @@ TEST_F(HandlerReadTestSuite, shouldReadDeviceStatus) {
     auto path = "my/dev/1"s;
     auto data = "device is in RUNNING state"s;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, status()).WillOnce(Return(data));
@@ -113,10 +113,10 @@ TEST_F(HandlerReadTestSuite, shouldReadAttributeValue) {
     EXPECT_CALL(attributeMock, ostream(_))
         .WillOnce(Invoke([&](auto& s) { s << data; }));
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
-    EXPECT_CALL(*deviceProxyMock, read_attribute(_))
+    EXPECT_CALL(*deviceProxyMock, read_attribute(attr))
         .WillOnce(ReturnRefOfCopy(DeviceAttributeMockWrapper{attributeMock}));
 
     testSuccessfulRead(paths::AttributeValuePath{path, attr}, data);
@@ -147,7 +147,7 @@ TEST_F(HandlerReadTestSuite, shouldReadStartingFromOffset) {
     auto path = "my/dev/1"s;
     auto data = "longdata"s;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, name()).WillOnce(Return(data));
@@ -165,7 +165,7 @@ TEST_F(HandlerReadTestSuite, shouldReadNothingIfOffsetExceedsLength) {
     auto path = "my/dev/1"s;
     auto data = "data"s;
 
-    EXPECT_CALL(deviceProxyProviderMock, call({path}))
+    EXPECT_CALL(deviceProxyProviderMock, call(path))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, name()).WillOnce(Return(data));

@@ -83,7 +83,7 @@ TEST_F(HandlerReaddirTestSuite, shouldFillDatabaseQuery) {
 
     EXPECT_CALL(dbDatumMock, toStringVector()).WillOnce(Return(queryResult));
 
-    EXPECT_CALL(databaseProviderMock, call(_))
+    EXPECT_CALL(databaseProviderMock, call())
         .WillOnce(ReturnRef(databaseMock));
 
     EXPECT_CALL(*databaseMock, get_device_exported("aaa*"s))
@@ -118,7 +118,7 @@ TEST_F(HandlerReaddirTestSuite, shouldFillDeviceAttributesPath) {
                                                        "bbb",
                                                        "ddd" };
 
-    EXPECT_CALL(deviceProxyProviderMock, call(_))
+    EXPECT_CALL(deviceProxyProviderMock, call("a/b/c"s))
         .WillOnce(ReturnRef(deviceProxyMock));
 
     EXPECT_CALL(*deviceProxyMock, get_attribute_list())

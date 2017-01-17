@@ -7,16 +7,6 @@
 #include <utility>
 #include <string>
 
-template <typename Ret, typename... Args>
-struct FunctionMock {
-
-    MOCK_CONST_METHOD1_T(call, Ret(std::tuple<Args...>));
-
-    Ret operator()(Args... args) const {
-        return call(std::make_tuple(args...));
-    }
-};
-
 struct DbDatumMock {
     MOCK_CONST_METHOD0(toStringVector, std::vector<std::string>());
 };
@@ -53,7 +43,7 @@ struct DatabaseMock {
 };
 
 struct DeviceProxyMock {
-    MOCK_CONST_METHOD1(read_attribute, DeviceAttributeMockWrapper&(const char*));
+    MOCK_CONST_METHOD1(read_attribute, DeviceAttributeMockWrapper&(std::string));
     MOCK_CONST_METHOD0(get_attribute_list, std::vector<std::string>*());
     MOCK_CONST_METHOD0(info, DeviceInfoMock&());
     MOCK_CONST_METHOD0(description, std::string());
@@ -61,8 +51,22 @@ struct DeviceProxyMock {
     MOCK_CONST_METHOD0(status, std::string());
 };
 
-using DatabaseProviderMock
-    = FunctionMock<Maybe<DatabaseMock>&>;
+struct DatabaseProviderMock {
 
-using DeviceProxyProviderMock
-    = FunctionMock<Maybe<DeviceProxyMock>&, std::string>;
+    MOCK_CONST_METHOD0(call, Maybe<DatabaseMock>&());
+
+    template<typename... Args>
+    auto& operator()(Args&&... args) const {
+        return call(std::forward<Args>(args)...);
+    }
+};
+
+struct DeviceProxyProviderMock {
+
+    MOCK_CONST_METHOD1(call, Maybe<DeviceProxyMock>&(std::string));
+
+    template<typename... Args>
+    auto& operator()(Args&&... args) const {
+        return call(std::forward<Args>(args)...);
+    }
+};
