@@ -25,7 +25,6 @@ if(TANGO_FOUND)
 
     set(LIBS ${LIBS} ${FUSE_LIBRARIES})
     set(LIBS ${LIBS} ${TANGO_LIBRARIES})
-    set(LIBS ${LIBS} ${TANGO_LDFLAGS})
 
     file(GLOB_RECURSE SOURCES_MAIN "src/*.cpp")
     add_executable(${PROJECT_MAIN} ${SOURCES_MAIN})
