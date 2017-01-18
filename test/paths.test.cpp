@@ -10,62 +10,40 @@ using namespace ::testing;
 
 namespace {
 
-struct TangoDependneciesCallback {
-    virtual ~TangoDependneciesCallback() = default;
-    virtual int call(int) const = 0;
-    int operator()(int p) const {
-        return call(p);
-    }
-};
-
-struct FuseInterfaceCallback {
-    virtual ~FuseInterfaceCallback() = default;
-    virtual TangoDependneciesCallback& call(const char*, int) const = 0;
-    TangoDependneciesCallback& operator()(const char* c, int p) const {
-        return call(c, p);
-    }
-};
-
-struct PathCallback {
-
-    virtual ~PathCallback() = default;
-
-    virtual FuseInterfaceCallback& call(const DatabaseQueryPath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DevicePath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DeviceClassPath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DeviceDescriptionPath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DeviceNamePath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DeviceStatusPath&) const = 0;
-    virtual FuseInterfaceCallback& call(const DeviceAttributesPath&) const = 0;
-    virtual FuseInterfaceCallback& call(const AttributePath&) const = 0;
-    virtual FuseInterfaceCallback& call(const AttributeValuePath&) const = 0;
-    virtual FuseInterfaceCallback& call(const InvalidPath&) const = 0;
-
-    template <typename Path>
-    FuseInterfaceCallback& operator()(const Path& p) const {
-        return call(p);
-    }
-};
-
-struct TangoDependneciesCallbackMock : TangoDependneciesCallback {
+struct TangoDependneciesCallbackMock {
     MOCK_CONST_METHOD1(call, int(int));
+
+    template <typename... Args>
+    auto operator()(Args&&... args) const {
+        return call(std::forward<Args>(args)...);
+    }
 };
 
-struct FuseInterfaceCallbackMock : FuseInterfaceCallback {
-    MOCK_CONST_METHOD2(call, TangoDependneciesCallback&(const char*, int));
+struct FuseInterfaceCallbackMock {
+    MOCK_CONST_METHOD2(call, TangoDependneciesCallbackMock&(const char*, int));
+
+    template <typename... Args>
+    auto& operator()(Args&&... args) const {
+        return call(std::forward<Args>(args)...);
+    }
 };
 
-struct PathCallbackMock: PathCallback {
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DatabaseQueryPath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DevicePath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DeviceClassPath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DeviceDescriptionPath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DeviceNamePath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DeviceStatusPath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const DeviceAttributesPath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const AttributePath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const AttributeValuePath&));
-    MOCK_CONST_METHOD1(call, FuseInterfaceCallback&(const InvalidPath&));
+struct PathCallbackMock {
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DatabaseQueryPath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DevicePath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DeviceClassPath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DeviceDescriptionPath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DeviceNamePath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DeviceStatusPath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const DeviceAttributesPath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const AttributePath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const AttributeValuePath&));
+    MOCK_CONST_METHOD1(call, FuseInterfaceCallbackMock&(const InvalidPath&));
+
+    template <typename... Args>
+    auto& operator()(Args&&... args) const {
+        return call(std::forward<Args>(args)...);
+    }
 };
 
 } // namespace
@@ -90,7 +68,7 @@ struct PathsTestSuite : Test {
         EXPECT_CALL(pathCallback, call(tangoPath))
             .WillOnce(ReturnRef(fuseInterfaceCallback));
 
-        auto f = [&](auto&& p) -> FuseInterfaceCallback& {
+        auto f = [&](auto&& p) -> FuseInterfaceCallbackMock& {
             return this->pathCallback(std::forward<decltype(p)>(p));
         };
 

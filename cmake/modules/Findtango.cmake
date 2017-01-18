@@ -5,8 +5,7 @@
 # - TANGO_FOUND        : was TANGO found?
 # - TANGO_INCLUDE_DIRS : TANGO include directory
 # - TANGO_LIBRARIES    : TANGO library and dependencies
-# - PC_TANGO_LDFLAGS   : TANGO linker flags (as provided by PkgConfig)
-#
+# - PC_TANGO_LDFLAGS   : TANGO raw linker flags (as provided by PkgConfig)
 
 find_package(PkgConfig REQUIRED)
 include(FindPackageHandleStandardArgs)

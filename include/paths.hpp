@@ -129,7 +129,6 @@ constexpr auto makeFuseHandler = [](auto ...deps) {
         if (match(RE_ATTRIBUTE_VALUE))    return f(AttributeValuePath{m[1], m[2]});
 
         return f(InvalidPath{});
-
     };
     };
 };
