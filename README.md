@@ -46,9 +46,12 @@ $ ./tango-fs -h
 
 * build the filesystem daemon
 
-  First two steps will spawn a Fedora-based container with all dependencies
-  installed. The `make` creates `tango-fs` binary in current working directory.
-  Remember to set TANGO_HOST before mounting the filesystem.
+  * First two steps will spawn a Fedora-based container with all dependencies
+  installed. You can also use Ubuntu-based image. You may omit these steps if
+  your system is up-to-date and you have both tango and fuse installed.
+  * The `make` program creates `tango-fs` (and `tango-fs.test` if googletest is
+    available) binary in current working directory.
+  * Remember to set TANGO_HOST before mounting the filesystem.
 
   ```
 $ docker build -t tango-fs-dev -f ./docker-dev/Dockerfile.fc25 .
